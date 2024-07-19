@@ -7,9 +7,16 @@ const { Engine, Bodies, World } = Matter;
 const engine = Engine.create();
 const world = engine.world;
 
+engine.world.gravity.y = 3
+
 // Создаем тела для симуляции
 const groundHeight = 200
+const wallWidth = 100
+
 const ground = Bodies.rectangle(SERVER_WIDTH/2, SERVER_HEIGHT - groundHeight / 2, SERVER_WIDTH, groundHeight, { isStatic: true, restitution: 0 });
+const leftWall = Bodies.rectangle(0 + wallWidth/2, SERVER_HEIGHT/2, wallWidth, SERVER_HEIGHT, { isStatic: true, restitution: 0 });
+const rightWall = Bodies.rectangle(SERVER_WIDTH - wallWidth/2, SERVER_HEIGHT/2, wallWidth, SERVER_HEIGHT, { isStatic: true, restitution: 0 });
+const roof = Bodies.rectangle(SERVER_WIDTH/2, 0 + wallWidth / 2, SERVER_WIDTH, wallWidth, { isStatic: true, restitution: 0 });
 
 const playerHeight = 400
 const playerWidth = 400
@@ -17,14 +24,17 @@ const playerWidth = 400
 const player = Bodies.rectangle(SERVER_WIDTH/2, 500, playerWidth, playerHeight, {
     mass: 80,
     inertia: Infinity,
-    friction: 0.001, // Низкое значение сопротивления поверхности
-    frictionAir: 0.01 // Низкое значение сопротивления воздуха
+    friction: 0.0001, // Низкое значение сопротивления поверхности
+    frictionAir: 0.001 // Низкое значение сопротивления воздуха
 });
 
 const ballRadius = 100
-const ball = Bodies.circle(SERVER_WIDTH/2, 100, ballRadius);
+const ball = Bodies.circle(SERVER_WIDTH/2, 100, ballRadius, {
+    restitution: 0.8,
+    mass: 0.05,
+});
 
-World.add(world, [ground, ball, player]);
+World.add(world, [ground, roof, leftWall, rightWall, ball, player]);
 
 // Обновление состояния физической симуляции
 function updateSimulation() {
@@ -49,6 +59,27 @@ function getSimulationState() {
             },
             {
                 type: 'rectangle',
+                x: leftWall.position.x,
+                y: leftWall.position.y,
+                width: wallWidth,
+                height: SERVER_HEIGHT
+            },
+            {
+                type: 'rectangle',
+                x: rightWall.position.x,
+                y: rightWall.position.y,
+                width: wallWidth,
+                height: SERVER_HEIGHT
+            },
+            {
+                type: 'rectangle',
+                x: roof.position.x,
+                y: roof.position.y,
+                width: SERVER_WIDTH,
+                height: wallWidth
+            },
+            {
+                type: 'rectangle',
                 x: player.position.x,
                 y: player.position.y,
                 width: playerWidth,
@@ -60,7 +91,7 @@ function getSimulationState() {
 
 function applyForce(action){
     const moveSpeed = 10;
-    const jumpSpeed = 20;
+    const jumpSpeed = 30;
     switch (action) {
         case 'jump':
             // Matter.Body.applyForce(player, player.position, {x:0, y: -forceMagnitude})
@@ -78,6 +109,11 @@ function applyForce(action){
         case 'moveDown':
             // Matter.Body.applyForce(player, player.position, {x: 0, y: forceMagnitude})
             Matter.Body.setVelocity(player, {x: player.velocity.x, y: jumpSpeed});
+            break;
+
+        case 'stop':
+            // Matter.Body.applyForce(player, player.position, {x: 0, y: forceMagnitude})
+            Matter.Body.setVelocity(player, {x: 0, y: player.velocity.y});
             break;
         default:
             alert( "Нет таких значений" );

@@ -58,8 +58,31 @@ const keyMap = {
     KeyS: 'moveDown'
 };
 
+const activeKeys = new Set();
+
 document.addEventListener('keydown', (event) => {
     const action = keyMap[event.code]
     if(action)
-        socket.send(action);
+    {
+        activeKeys.add(action);
+        sendMovementCommands();
+    }
+
 });
+
+document.addEventListener('keyup', (event) => {
+    const action = keyMap[event.code]
+    if(action){
+        activeKeys.delete(action);
+        sendMovementCommands();
+    }
+    // if(action && action !== 'jump')
+});
+
+function sendMovementCommands(){
+    if(activeKeys.size === 0){
+        socket.send("stop");
+    }
+    else
+        activeKeys.forEach(action => socket.send(action))
+}

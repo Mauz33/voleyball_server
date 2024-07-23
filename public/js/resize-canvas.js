@@ -1,4 +1,3 @@
-const container = document.querySelector('.canvas-container');
 const gameCanvas = document.getElementById('gameCanvas');
 
 

@@ -44,44 +44,64 @@ function updateSimulation() {
 function getSimulationState() {
     return {
         objects: [
+            // {
+            //     id: ball.id,
+            //     position: {
+            //         x: ball.position.x,
+            //         y: ball.position.y,
+            //     },
+            //     type: 'circle',
+            //
+            //     radius: ballRadius
+            // },
             {
-                type: 'circle',
-                x: ball.position.x,
-                y: ball.position.y,
-                radius: ballRadius
-            },
-            {
+                id: ground.id,
                 type: 'rectangle',
-                x: ground.position.x,
-                y: ground.position.y,
+                position: {
+                    x: ground.position.x,
+                    y: ground.position.y,
+                },
                 width: SERVER_WIDTH,
-                height: groundHeight
+                height: groundHeight,
+                isStatic: true
             },
+            // {
+            //     id: leftWall.id,
+            //     type: 'rectangle',
+            //     position: {
+            //         x: leftWall.position.x,
+            //         y: leftWall.position.y,
+            //     },
+            //     width: wallWidth,
+            //     height: SERVER_HEIGHT
+            // },
+            // {
+            //     id: rightWall.id,
+            //     type: 'rectangle',
+            //     position: {
+            //         x: rightWall.position.x,
+            //         y: rightWall.position.y,
+            //     },
+            //     width: wallWidth,
+            //     height: SERVER_HEIGHT
+            // },
+            // {
+            //     id: roof.id,
+            //     type: 'rectangle',
+            //     position: {
+            //         x: roof.position.x,
+            //         y: roof.position.y,
+            //     },
+            //     width: SERVER_WIDTH,
+            //     height: wallWidth
+            // },
             {
+                id: player.id,
                 type: 'rectangle',
-                x: leftWall.position.x,
-                y: leftWall.position.y,
-                width: wallWidth,
-                height: SERVER_HEIGHT
-            },
-            {
-                type: 'rectangle',
-                x: rightWall.position.x,
-                y: rightWall.position.y,
-                width: wallWidth,
-                height: SERVER_HEIGHT
-            },
-            {
-                type: 'rectangle',
-                x: roof.position.x,
-                y: roof.position.y,
-                width: SERVER_WIDTH,
-                height: wallWidth
-            },
-            {
-                type: 'rectangle',
-                x: player.position.x,
-                y: player.position.y,
+                position: {
+                    x: player.position.x,
+                    y: player.position.y,
+                },
                 width: playerWidth,
                 height: playerHeight
             }

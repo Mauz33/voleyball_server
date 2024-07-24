@@ -82,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateObject(obj);
             }
         });
-        Engine.update(engine);
     }
 
 

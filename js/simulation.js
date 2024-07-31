@@ -2,7 +2,7 @@ const Matter = require('matter-js');
 const {SERVER_WIDTH, SERVER_HEIGHT} = require("./config");
 const {server} = require("./app");
 
-const { Engine, Bodies, World, Body, Events } = Matter;
+const { Engine, Bodies, World, Body, Constraint, Composites } = Matter;
 
 const engine = Engine.create();
 const world = engine.world;
@@ -33,10 +33,61 @@ const playerOptions = {
     restitution: 0
 };
 
-const player = Bodies.polygon(SERVER_WIDTH / 2, SERVER_HEIGHT / 2, 6, 160, playerOptions);
-player.options = {sides: 6, radius:160, ...playerOptions };
+const player = Bodies.polygon(SERVER_WIDTH / 3, SERVER_HEIGHT / 2, 10, 160, playerOptions);
+player.options = {sides: 10, radius:160, ...playerOptions };
 // Поворачиваем шестиугольник на 90 градусов (π/2 радиан)
-// Body.rotate(player, Math.PI / 2);
+Body.rotate(player, Math.PI / 2);
+
+
+const group = Body.nextGroup(true);
+const chainElementWidth = 20;
+const chainElementHeight = 50;
+
+const ropeX = SERVER_WIDTH/2;
+
+const yTop = SERVER_HEIGHT - SERVER_HEIGHT/2;
+const yBottom = SERVER_HEIGHT - ground.options.height - player.options.radius;
+
+const ropeY = yTop;
+
+const chainLength = -Math.round((yTop - yBottom) / chainElementHeight);
+
+console.log(chainLength);
+
+const rope = Composites.stack(ropeX, ropeY, 1, chainLength, 0, 0, function (x,y){
+    const bodyOptions = {
+        render: {
+            fillStyle: 'transparent',
+            strokeStyle: 'white',
+            lineWidth: 3
+        },
+        collisionFilter: {group: group},
+        chamfer: 0
+    }
+    const body = Bodies.rectangle(x, y, chainElementWidth, chainElementHeight, bodyOptions);
+    body.options = { width: chainElementWidth, height: chainElementHeight, ...bodyOptions };
+    return body;
+});
+
+Composites.chain(rope, 0, 0.5, 0, -0.5, {stiffness:1, length: 0});
+
+const topConstraint = Constraint.create({
+    pointA: {x: ropeX, y: yTop-100},
+    bodyB: rope.bodies[0],
+    pointB: {x:0, y: -chainElementHeight/2},
+    stiffness: 0.08,
+    length: 10
+})
+
+const bottomConstraint = Constraint.create({
+    pointA: {x: ropeX, y: yBottom},
+    bodyB: rope.bodies[rope.bodies.length - 1],
+    pointB: {x:0, y: chainElementHeight/2},
+    stiffness: 0.9,
+    length: 0
+})
+
+World.add(world, [rope, topConstraint, bottomConstraint]);
 
 const ballOptions = {
     restitution: 0.7,
@@ -44,44 +95,17 @@ const ballOptions = {
     friction: 0.0001, // Увеличиваем трение для лучшего взаимодействия
     frictionAir: 0.008
 };
-const ball = Bodies.circle(SERVER_WIDTH / 2, 100, 150, ballOptions);
+const ball = Bodies.circle(SERVER_WIDTH / 3, 100, 150, ballOptions);
 ball.options = { radius: 150, ...ballOptions };
 
 World.add(world, [ground, roof, leftWall, rightWall, ball, player]);
 
-// // Обработка столкновений
-// Events.on(engine, 'collisionStart', (event) => {
-//     const pairs = event.pairs;
-//     for (let i = 0; i < pairs.length; i++) {
-//         const pair = pairs[i];
-//         if ((pair.bodyA === player && pair.bodyB === ball) || (pair.bodyA === ball && pair.bodyB === player)) {
-//             // Если игрок находится на мяче, обнуляем вертикальную скорость игрока и мяча
-//             if (player.position.y < ball.position.y) {
-//                 Body.setVelocity(player, { x: player.velocity.x, y: 0 });
-//                 Body.setVelocity(ball, { x: ball.velocity.x, y: 0 });
-//             }
-//         }
-//     }
-// });
-
 // Обновление состояния физической симуляции
 function updateSimulation() {
-    // const maxSpeed = 10;
-    // [player, ball].forEach(body => {
-    //     if (Math.abs(body.velocity.x) > maxSpeed) {
-    //         Body.setVelocity(body, { x: Math.sign(body.velocity.x) * maxSpeed, y: body.velocity.y });
-    //     }
-    //     if (Math.abs(body.velocity.y) > maxSpeed) {
-    //         Body.setVelocity(body, { x: body.velocity.x, y: Math.sign(body.velocity.y) * maxSpeed });
-    //     }
-    // });
-
     Engine.update(engine, 1000 / 60); // Обновляем каждую 1/60 секунды
-
 }
 
 function getSimulationState() {
-    console.log(player.label);
     const bodies = engine.world.bodies.map(body => ({
         id: body.id,
         type: body.label,
@@ -90,7 +114,15 @@ function getSimulationState() {
         options: body.options
     }));
 
-    return bodies;
+    const ropeBodies = rope.bodies.map(body => ({
+        id: body.id,
+        type: body.label,
+        position: body.position,
+        angle: body.angle,
+        options: body.options
+    }));
+
+    return bodies.concat(ropeBodies);
 }
 
 function applyForce(action){

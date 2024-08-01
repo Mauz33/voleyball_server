@@ -1,7 +1,7 @@
 const WebSocket = require('ws');
 const { server } = require('./app');
-const { updateSimulation, getSimulationState, applyForce} = require('./simulation');
-
+const SimulationManager = require('./SimulationManager');
+const simulationManager = new SimulationManager();
 
 const wss = new WebSocket.Server({ server });
 
@@ -9,8 +9,8 @@ wss.on('connection', (ws) => {
     console.log('Новое WebSocket подключение');
 
     const interval = setInterval(() => {
-        updateSimulation();
-        const state = getSimulationState();
+        simulationManager.update();
+        const state = simulationManager.getSimulationState();
         // console.log('Отправка состояния:', state); // Добавляем лог перед отправкой
         ws.send(JSON.stringify(state));
     }, 1000 / 120); // 60 FPS
@@ -26,7 +26,7 @@ wss.on('connection', (ws) => {
         const textDecoder = new TextDecoder('utf-8');
         const message = textDecoder.decode(data);
 
-        applyForce(message);
+        simulationManager.applyForce(message);
     });
 });
 

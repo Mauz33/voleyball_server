@@ -2,7 +2,7 @@ const Matter = require('matter-js');
 const {SERVER_WIDTH, SERVER_HEIGHT} = require("./config");
 const {server} = require("./app");
 
-const { Engine, Bodies, World, Body, Constraint, Composites } = Matter;
+const { Engine, Bodies, World, Body, Constraint, Composites, Events } = Matter;
 
 const engine = Engine.create();
 const world = engine.world;
@@ -15,7 +15,6 @@ const wallWidth = 100;
 const wallOptions = { isStatic: true, restitution: 0.2, friction: 0.1 };
 const ground = Bodies.rectangle(SERVER_WIDTH / 2, SERVER_HEIGHT - groundHeight / 2, SERVER_WIDTH, groundHeight, wallOptions);
 ground.options = { width: SERVER_WIDTH, height: groundHeight, ...wallOptions };
-
 const leftWall = Bodies.rectangle(0 + wallWidth / 2, SERVER_HEIGHT / 2, wallWidth, SERVER_HEIGHT, wallOptions);
 leftWall.options = { width: wallWidth, height: SERVER_HEIGHT, ...wallOptions };
 
@@ -98,7 +97,49 @@ const ballOptions = {
 const ball = Bodies.circle(SERVER_WIDTH / 3, 100, 150, ballOptions);
 ball.options = { radius: 150, ...ballOptions };
 
-World.add(world, [ground, roof, leftWall, rightWall, ball, player]);
+
+
+const colorA = 'green',
+    colorB = 'blue';
+
+const colliderOptions = {
+    isSensor: true,
+    isStatic: true,
+    render: {
+        fillStyle: colorB,
+        lineWidth: 1
+    }
+};
+
+const collider = Bodies.rectangle(SERVER_WIDTH/4, SERVER_HEIGHT - groundHeight, SERVER_WIDTH/2, 10, colliderOptions);
+collider.options = { width: SERVER_WIDTH/2, height: 10, ...colliderOptions};
+
+Events.on(engine, 'collisionStart', function(event) {
+    const pairs = event.pairs;
+
+    for (let i = 0, j = pairs.length; i !== j; ++i) {
+        const pair = pairs[i];
+
+        if (pair.bodyA.id === collider.id && pair.bodyB.id === ball.id) {
+            pair.bodyB.render.fillStyle = colorA;
+            console.log(pair.bodyB.render);
+            break;
+        } else if (pair.bodyB.id === collider.id && pair.bodyA.id === ball.id) {
+            pair.bodyA.render.fillStyle = colorA;
+            console.log(pair.bodyA.render);
+
+            break;
+
+        }
+    }
+
+
+});
+
+
+
+World.add(world, [ground, roof, leftWall, rightWall, ball, player, collider]);
+
 
 // Обновление состояния физической симуляции
 function updateSimulation() {
@@ -111,7 +152,8 @@ function getSimulationState() {
         type: body.label,
         position: body.position,
         angle: body.angle,
-        options: body.options
+        options: body.options,
+        render: body.render
     }));
 
     const ropeBodies = rope.bodies.map(body => ({
@@ -119,7 +161,8 @@ function getSimulationState() {
         type: body.label,
         position: body.position,
         angle: body.angle,
-        options: body.options
+        options: body.options,
+        render: body.render
     }));
 
     return bodies.concat(ropeBodies);
@@ -154,6 +197,10 @@ function applyForce(action){
         default:
             alert( "Нет таких значений" );
     }
+}
+
+function applyStartPosition(){
+
 }
 
 module.exports = {updateSimulation, getSimulationState, applyForce};

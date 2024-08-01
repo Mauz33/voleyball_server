@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     engine.world.gravity.y = 0;
 
 // Создаем рендерер и привязываем его к <canvas>
-    const render = Render.create({
+    const renderClient = Render.create({
         canvas: canvas,
         engine: engine,
         options: {
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 // Запускаем  рендер
-    Render.run(render);
+    Render.run(renderClient);
 
 // Обработчик открытия соединения
     socket.addEventListener('open', () => {
@@ -45,32 +45,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const objects = {};
 // Создаем объекты на клиенте
     function createObject(data) {
-        const { id, position, type, options } = data;
+        const { id, position, type, options, render } = data;
         if (type === 'Rectangle Body'){
             // console.log(`Создаем прямоугольник: x=${position.x * scaleX}, y=${position.y * scaleY}, width=${width * scaleX}, height=${height * scaleY}`);
             let body = Bodies.rectangle(position.x * scaleX, position.y * scaleY, options.width * scaleX, options.height * scaleY, options);
             objects[id] = body;
-            Composite.add(render.engine.world, body);
+            body.render = render;
+            Composite.add(renderClient.engine.world, body);
         }
         else if(type === 'Circle Body'){
             let body = Bodies.circle(position.x * scaleX, position.y * scaleY, options.radius * scaleX, options);
             objects[id] = body;
-            Composite.add(render.engine.world, body);
+            body.render = render;
+            Composite.add(renderClient.engine.world, body);
         }
         if (type === 'Polygon Body') {
             let body = Bodies.polygon(position.x * scaleX, position.y * scaleY, options.sides, options.radius * scaleX, options);
             objects[id] = body;
-            Composite.add(render.engine.world, body);
+            body.render = render;
+            Composite.add(renderClient.engine.world, body);
         }
+
     }
 // Обновляем объекты на клиенте
     function updateObject(data) {
-        const { id, position, angle} = data;
+        const { id, position, angle, render} = data;
         const body = objects[id];
         const posConverted = {
             x: position.x * scaleX,
             y: position.y * scaleY
         }
+        body.render = render;
         Body.setPosition(body, posConverted);
         Body.setAngle(body, angle);
 

@@ -1,88 +1,185 @@
-// Создание WebSocket подключения
-const socket = new WebSocket('ws://localhost:3000');
-const canvas = document.getElementById('gameCanvas');
-const context = canvas.getContext('2d');
+document.addEventListener('DOMContentLoaded', () => {
 
-// Обработчик открытия соединения
-socket.addEventListener('open', () => {
-    console.log('WebSocket соединение открыто');
-});
+    const socket = new WebSocket('ws://localhost:3000');
+    const canvas = document.getElementById('gameCanvas');
 
-socket.addEventListener('message', (event) => {
-    // Проверка типа данных
-    if (typeof event.data === 'string') {
-        try {
-            const state = JSON.parse(event.data);
-            // console.log('Получено состояние:', state); // Лог полученного состояния
-            drawSimulation(state);
-        } catch (error) {
-            console.error('Ошибка разбора JSON:', error);
-        }
-    } else {
-        console.error('Получены неподдерживаемые данные:', event.data);
-    }
-});
+    const { Render, Bodies, Body, Composite, Engine } = Matter;
+    const engine = Engine.create({ enableSleeping: false });
+    engine.world.gravity.y = 0;
 
-function drawSimulation(state) {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-
-    state.objects.forEach(obj => {
-        if (obj.type === 'circle') {
-            // console.log(`Рисуем круг: x=${obj.x * scaleX}, y=${obj.y * scaleY}, radius=${obj.radius}`);
-            context.beginPath();
-            context.arc(obj.x * scaleX, obj.y * scaleY, obj.radius * scaleX, 0, 2 * Math.PI); // Применяем масштабирование
-            context.fillStyle = 'blue';
-            context.fill();
-        } else if (obj.type === 'rectangle') {
-            // console.log(`Рисуем прямоугольник: x=${obj.x}, y=${obj.y}, width=${obj.width}, height=${obj.height}`);
-            context.fillStyle = 'red';
-            context.fillRect(
-                (obj.x - obj.width / 2) * scaleX,
-                (obj.y - obj.height / 2) * scaleY,
-                obj.width * scaleX,
-                obj.height * scaleY
-            ); // Применяем масштабирование
+// Создаем рендерер и привязываем его к <canvas>
+    const renderClient = Render.create({
+        canvas: canvas,
+        engine: engine,
+        options: {
+            width: canvas.width,
+            height: canvas.height,
+            wireframes: false,
+            background: '#db7093' // Устанавливаем цвет фона
         }
     });
-}
 
-const keyMap = {
-    KeyW: 'jump',
-    ArrowUp: 'jump',
-    Space: 'jump',
-    ArrowLeft: 'moveLeft',
-    KeyA: 'moveLeft',
-    ArrowRight: 'moveRight',
-    KeyD: 'moveRight',
-    ArrowDown: 'moveDown',
-    KeyS: 'moveDown'
-};
+// Запускаем  рендер
+    Render.run(renderClient);
 
-const activeKeys = new Set();
+// Обработчик открытия соединения
+    socket.addEventListener('open', () => {
+        console.log('WebSocket соединение открыто');
+    });
+    socket.addEventListener('message', (event) => {
+        // Проверка типа данных
+        if (typeof event.data === 'string') {
+            try {
+                const state = JSON.parse(event.data);
+                // console.log('Получено состояние:', state); // Лог полученного состояния
+                drawSimulation(state);
+            } catch (error) {
+                console.error('Ошибка разбора JSON:', error);
+            }
+        } else {
+            console.error('Получены неподдерживаемые данные:', event.data);
+        }
+    });
 
-document.addEventListener('keydown', (event) => {
-    const action = keyMap[event.code]
-    if(action)
-    {
-        activeKeys.add(action);
-        sendMovementCommands();
+
+    const objects = {};
+// Создаем объекты на клиенте
+    function createObject(data) {
+        const { id, position, type, options, render } = data;
+        if (type === 'Rectangle Body'){
+            // console.log(`Создаем прямоугольник: x=${position.x * scaleX}, y=${position.y * scaleY}, width=${width * scaleX}, height=${height * scaleY}`);
+            let body = Bodies.rectangle(position.x * scaleX, position.y * scaleY, options.width * scaleX, options.height * scaleY, options);
+            objects[id] = body;
+            body.render = render;
+            Composite.add(renderClient.engine.world, body);
+        }
+        else if(type === 'Circle Body'){
+            let body = Bodies.circle(position.x * scaleX, position.y * scaleY, options.radius * scaleX, options);
+            objects[id] = body;
+            body.render = render;
+            Composite.add(renderClient.engine.world, body);
+        }
+        if (type === 'Polygon Body') {
+            let body = Bodies.polygon(position.x * scaleX, position.y * scaleY, options.sides, options.radius * scaleX, options);
+            objects[id] = body;
+            body.render = render;
+            Composite.add(renderClient.engine.world, body);
+        }
+
+    }
+// Обновляем объекты на клиенте
+    function updateObject(data) {
+        const { id, position, angle, render} = data;
+        const body = objects[id];
+        const posConverted = {
+            x: position.x * scaleX,
+            y: position.y * scaleY
+        }
+        body.render = render;
+        Body.setPosition(body, posConverted);
+        Body.setAngle(body, angle);
+
+    }
+    function drawSimulation(state) {
+        state.forEach(obj => {
+            if (!objects[obj.id]) {
+                createObject(obj);
+            } else {
+                updateObject(obj);
+            }
+        });
     }
 
+
+
+
+
+
+
+
+
+
+    const keyMap = {
+        KeyW: 'jump',
+        ArrowUp: 'jump',
+        Space: 'jump',
+        ArrowLeft: 'moveLeft',
+        KeyA: 'moveLeft',
+        ArrowRight: 'moveRight',
+        KeyD: 'moveRight',
+        ArrowDown: 'moveDown',
+        KeyS: 'moveDown'
+    };
+    const activeKeys = new Set();
+    document.addEventListener('keydown', (event) => {
+        const action = keyMap[event.code]
+        if(action)
+        {
+            activeKeys.add(action);
+            sendMovementCommands();
+        }
+    });
+    document.addEventListener('keyup', (event) => {
+        const action = keyMap[event.code]
+        if(action){
+            activeKeys.delete(action);
+            sendMovementCommands();
+        }
+        // if(action && action !== 'jump')
+    });
+    function sendMovementCommands(){
+        if(activeKeys.size === 0){
+            socket.send("stop");
+        }
+        else
+            activeKeys.forEach(action => socket.send(action))
+    }
 });
 
-document.addEventListener('keyup', (event) => {
-    const action = keyMap[event.code]
-    if(action){
-        activeKeys.delete(action);
-        sendMovementCommands();
-    }
-    // if(action && action !== 'jump')
-});
 
-function sendMovementCommands(){
-    if(activeKeys.size === 0){
-        socket.send("stop");
-    }
-    else
-        activeKeys.forEach(action => socket.send(action))
-}
+
+
+
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+// //
+//

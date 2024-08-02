@@ -9,7 +9,8 @@ class SimulationManager{
         this.world = this.engine.world;
         this.objects = [];
         this.ground = null;
-        this.player = null;
+        this.playerLeft = null;
+        this.playerRight = null;
         this.#setupSimulation();
     }
     #setupSimulation() {
@@ -66,16 +67,21 @@ class SimulationManager{
             restitution: 0
         };
 
-        const player = Bodies.polygon(SERVER_WIDTH / 3, SERVER_HEIGHT / 2, 10, 160, playerOptions);
-        player.options = {sides: 10, radius:160, ...playerOptions };
+        const playerLeft = Bodies.polygon(SERVER_WIDTH / 3, SERVER_HEIGHT / 2, 10, 160, playerOptions);
+        playerLeft.options = {sides: 10, radius:160, ...playerOptions };
+        Body.rotate(playerLeft, Math.PI / 2);
+
+        const playerRight = Bodies.polygon(SERVER_WIDTH - SERVER_WIDTH / 3, SERVER_HEIGHT / 2, 10, 160, {render: {fillStyle: 'white'}, ...playerOptions});
+        playerRight.options = {sides: 10, radius:160, ...playerOptions };
+        Body.rotate(playerRight, Math.PI / 2);
 
         // Поворачиваем шестиугольник на 90 градусов (π/2 радиан)
-        Body.rotate(player, Math.PI / 2);
 
-        this.objects.push(player);
-        World.add(this.world, player);
+        this.objects.push(playerLeft, playerRight);
+        World.add(this.world, [playerLeft, playerRight]);
 
-        this.player = player;
+        this.playerLeft = playerLeft;
+        this.playerRight= playerRight;
     }
 
     #createNet() {
@@ -87,7 +93,7 @@ class SimulationManager{
         const ropeX = SERVER_WIDTH/2;
 
         const yTop = SERVER_HEIGHT - SERVER_HEIGHT/2;
-        const yBottom = SERVER_HEIGHT - this.ground.options.height - this.player.options.radius;
+        const yBottom = SERVER_HEIGHT - this.ground.options.height - 160;
 
         const ropeY = yTop;
 
@@ -152,31 +158,31 @@ class SimulationManager{
             return obj;
         });
     }
-    applyForce(action){
+    applyForce(player, action){
         const moveSpeed = 10;
         const jumpSpeed = 20;
         switch (action) {
             case 'jump':
                 // Matter.Body.applyForce(player, player.position, {x:0, y: -forceMagnitude})
-                Matter.Body.setVelocity(this.player, {x: this.player.velocity.x, y: -jumpSpeed});
+                Matter.Body.setVelocity(player, {x: player.velocity.x, y: -jumpSpeed});
                 break;
             case 'moveRight':
                 // Matter.Body.applyForce(player, player.position, {x: forceMagnitude, y: 0})
-                Matter.Body.setVelocity(this.player, {x: moveSpeed, y: this.player.velocity.y});
+                Matter.Body.setVelocity(player, {x: moveSpeed, y: player.velocity.y});
                 break;
             case 'moveLeft':
                 // Matter.Body.applyForce(player, player.position, {x: -forceMagnitude, y: 0})
-                Matter.Body.setVelocity(this.player, {x: -moveSpeed, y: this.player.velocity.y});
+                Matter.Body.setVelocity(player, {x: -moveSpeed, y: player.velocity.y});
 
                 break;
             case 'moveDown':
                 // Matter.Body.applyForce(player, player.position, {x: 0, y: forceMagnitude})
-                Matter.Body.setVelocity(this.player, {x: this.player.velocity.x, y: jumpSpeed});
+                Matter.Body.setVelocity(player, {x: player.velocity.x, y: jumpSpeed});
                 break;
 
             case 'stop':
                 // Matter.Body.applyForce(player, player.position, {x: 0, y: forceMagnitude})
-                Matter.Body.setVelocity(this.player, {x: 0, y: this.player.velocity.y});
+                Matter.Body.setVelocity(player, {x: 0, y: player.velocity.y});
                 break;
             default:
                 alert( "Нет таких значений" );

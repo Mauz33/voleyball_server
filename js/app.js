@@ -1,9 +1,4 @@
-const express = require('express');
-const http = require('http');
-const app = express();
+const {server} = require('./server');
+const setupWebSocket = require('./websocket');
 
-app.use(express.static('public'));
-
-const server = http.createServer(app);
-
-module.exports = { app, server };
+setupWebSocket(server);

@@ -2,7 +2,6 @@ const { Engine, Bodies, World, Body, Constraint, Composites, Events } = require(
 const {SERVER_WIDTH, SERVER_HEIGHT} = require("./config");
 const Matter = require("matter-js");
 
-
 class SimulationManager{
     constructor() {
         this.engine = Engine.create();

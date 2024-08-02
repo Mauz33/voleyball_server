@@ -137,14 +137,20 @@ class SimulationManager{
         Engine.update(this.engine, 1000 / 60);
     }
     getSimulationState() {
-        return this.objects.map(body => ({
-            id: body.id,
-            type: body.label,
-            position: body.position,
-            angle: body.angle,
-            options: body.options,
-            render: body.render
-        }));
+        return this.objects.map(body =>
+        {
+            const obj = ({
+                    id: body.id,
+                    render: body.render,
+                    type: body.label,
+                    position: body.position,
+                    angle: body.angle,
+                    options: body.options
+                }
+            )
+            console.log(obj.render);
+            return obj;
+        });
     }
     applyForce(action){
         const moveSpeed = 10;

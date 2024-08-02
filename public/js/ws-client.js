@@ -1,11 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    const socket = new WebSocket('ws://localhost:3000');
+    const socket = new WebSocket('ws://192.168.0.112:3000');
     const canvas = document.getElementById('gameCanvas');
 
     const { Render, Bodies, Body, Composite, Engine } = Matter;
     const engine = Engine.create({ enableSleeping: false });
     engine.world.gravity.y = 0;
+
 
 // Создаем рендерер и привязываем его к <canvas>
     const renderClient = Render.create({
@@ -41,11 +42,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-
     const objects = {};
 // Создаем объекты на клиенте
     function createObject(data) {
+
         const { id, position, type, options, render } = data;
+        console.log(render);
         if (type === 'Rectangle Body'){
             // console.log(`Создаем прямоугольник: x=${position.x * scaleX}, y=${position.y * scaleY}, width=${width * scaleX}, height=${height * scaleY}`);
             let body = Bodies.rectangle(position.x * scaleX, position.y * scaleY, options.width * scaleX, options.height * scaleY, options);
@@ -84,20 +86,13 @@ document.addEventListener('DOMContentLoaded', () => {
         state.forEach(obj => {
             if (!objects[obj.id]) {
                 createObject(obj);
-            } else {
+            }
+            else {
                 updateObject(obj);
             }
         });
     }
-
-
-
-
-
-
-
-
-
+//
 
     const keyMap = {
         KeyW: 'jump',
@@ -135,51 +130,3 @@ document.addEventListener('DOMContentLoaded', () => {
             activeKeys.forEach(action => socket.send(action))
     }
 });
-
-
-
-
-
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-// //
-//

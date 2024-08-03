@@ -11,8 +11,40 @@
 <body>
 <div class="canvas-container">
     <canvas id="gameCanvas" width="3840" height="2160"></canvas>
+    <div id="overlay" class="overlay">
+        <h2 class="text-center">Создание комнаты</h2>
+        <form id="createRoomForm">
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary btn-block">Создать комнату</button>
+            </div>
+        </form>
+
+        <form id="joinRoomForm">
+            <div class="form-group">
+                <label for="roomId" class="form-label">Номер комнаты</label>
+                <input type="text" class="form-control" id="roomId">
+                <button type="submit" class="btn btn-primary btn-block mt-3">Присоединиться к комнате</button>
+            </div>
+        </form>
+        <div id="responseMessage" class="mt-3"></div>
+
+        <div id="roomState" class="mt-5" style="display: none;">
+            <h4 class="text-center">Состояние комнаты</h4>
+            <div id="player0" class="player-slot">Ожидание игрока 1...</div>
+            <div id="player1" class="player-slot">Ожидание игрока 2...</div>
+        </div>
+        <button id="startGame" type="submit" class="btn btn-primary btn-block mt-3" style="display: none;">Начать игру</button>
+
+    </div>
 </div>
+
 <script src="js/resize-canvas.js"></script>
-<script src="js/ws-client.js"></script>
+<script src="js/websocket-client.js"></script>
+<script src="js/menu.js"></script>
+<script src="js/render.js"></script>
+
+<script src="js/gameInputControl.js"></script>
+<!--<script src="js/ws-client.js"></script>-->
+
 </body>
 </html>

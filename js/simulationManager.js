@@ -67,11 +67,13 @@ class SimulationManager{
         };
 
         const playerLeft = Bodies.polygon(SERVER_WIDTH / 3, SERVER_HEIGHT / 2, 10, 160, playerOptions);
+        playerLeft.playerId = null;
         playerLeft.options = {sides: 10, radius:160, ...playerOptions };
         Body.rotate(playerLeft, Math.PI / 2);
 
         const playerRight = Bodies.polygon(SERVER_WIDTH - SERVER_WIDTH / 3, SERVER_HEIGHT / 2, 10, 160, {render: {fillStyle: 'white'}, ...playerOptions});
-        playerRight.options = {sides: 10, radius:160, ...playerOptions };
+        playerRight.options = {sides: 10, radius:160, ...playerOptions }
+        playerLeft.playerId = null;
         Body.rotate(playerRight, Math.PI / 2);
 
         // Поворачиваем шестиугольник на 90 градусов (π/2 радиан)
@@ -97,8 +99,6 @@ class SimulationManager{
         const ropeY = yTop;
 
         const chainLength = -Math.round((yTop - yBottom) / chainElementHeight);
-
-        console.log(chainLength);
 
         const rope = Composites.stack(ropeX, ropeY, 1, chainLength, 0, 0, (x,y) => {
             const bodyOptions = {
@@ -153,13 +153,15 @@ class SimulationManager{
                     options: body.options
                 }
             )
-            console.log(obj.render);
+            // console.log(obj.render);
             return obj;
         });
     }
-    applyForce(player, action){
+    applyForce(playerId, action){
         const moveSpeed = 10;
         const jumpSpeed = 20;
+        let player = this.playerRight.playerId === playerId ? this.playerRight : this.playerLeft;
+
         switch (action) {
             case 'jump':
                 // Matter.Body.applyForce(player, player.position, {x:0, y: -forceMagnitude})

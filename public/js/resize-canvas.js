@@ -1,6 +1,5 @@
 const gameCanvas = document.getElementById('gameCanvas');
 
-
 const SERVER_WIDTH = 3840;
 const SERVER_HEIGHT = 2160;
 

@@ -10,6 +10,11 @@
 </head>
 <body>
 <div class="canvas-container">
+    <div id="score-bar" class="score-bar" style="display: none">
+        <div id="left">Left</div>
+        <div id="score">0-0</div>
+        <div id="right">Right</div>
+    </div>
     <canvas id="gameCanvas" width="3840" height="2160"></canvas>
     <div id="overlay" class="overlay">
         <h2 class="text-center">Создание комнаты</h2>
@@ -30,12 +35,29 @@
 
         <div id="roomState" class="mt-5" style="display: none;">
             <h4 class="text-center">Состояние комнаты</h4>
-            <div id="player0" class="player-slot">Ожидание игрока 1...</div>
-            <div id="player1" class="player-slot">Ожидание игрока 2...</div>
+            <ul id="participants" class="list-group">
+                <!-- Список участников команды 1 -->
+            </ul>
         </div>
         <button id="startGame" type="submit" class="btn btn-primary btn-block mt-3" style="display: none;">Начать игру</button>
 
+        <div id="teamSelection" class="container" style="display: none">
+            <div class="team">
+                <button class="btn btn-danger btn-block" onclick="selectSide('left')">Команда 1</button>
+                <ul id="team-left-list" class="list-group">
+                    <!-- Список участников команды 1 -->
+                </ul>
+            </div>
+            <div class="team">
+                <button class="btn btn-primary btn-block" onclick="selectSide('right')">Команда 2</button>
+                <ul id="team-right-list" class="list-group">
+                    <!-- Список участников команды 2 -->
+                </ul>
+            </div>
+        </div>
     </div>
+
+
 </div>
 
 <script src="js/resize-canvas.js"></script>

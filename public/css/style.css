@@ -31,3 +31,37 @@ canvas {
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
+
+
+.container {
+    display: flex;
+    justify-content: space-between;
+    margin: auto;
+}
+
+.team {
+    margin: 0 10px;
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.score-bar {
+    display: flex; /* Используем Flexbox для выравнивания элементов */
+    position: absolute; /* Позиционируем элемент относительно родителя */
+    top: 0; /* Располагаем элемент вверху */
+    left: 50%; /* Выравниваем по горизонтали */
+    transform: translateX(-50%); /* Сдвигаем элемент влево на 50% ширины для точной центровки */
+    width: auto; /* Автоматическая ширина, может быть изменена */
+    padding: 20px; /* Добавляем отступы для визуального комфорта */
+    background-color: #f8f9fa; /* Фоновый цвет */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Добавляем тень */
+    border-radius: 5px; /* Скругляем углы */
+    font-size: 32px;
+}
+
+#score {
+    margin: 0 40px; /* Боковые отступы */
+    font-weight: bold; /* Жирный шрифт для выделения счета */
+}

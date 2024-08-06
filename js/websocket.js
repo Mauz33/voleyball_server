@@ -30,7 +30,10 @@ function setupWebSocket(server) {
                         break;
                     case 'startGame':
                         roomManager.startSimulation(message.roomId);
+
                         break;
+                    case 'selectCommand':
+                        roomManager.selectSide(message.roomId, ws.playerId, message.side)
                 }
             }
             else if(message.type === 'gameAction'){
@@ -40,7 +43,8 @@ function setupWebSocket(server) {
         });
 
         ws.on('close', () => {
-            // TODO: обновлять состояние комнаты
+            const roomId = roomManager.removeFromRoom(ws.playerId)
+            broadcastRoomState(roomId);
             console.log('Клиент отключился');
         });
     });
@@ -50,7 +54,7 @@ function setupWebSocket(server) {
 function handleJoinRoom(ws, roomId, playerId) {
     const room = roomManager.getRoom(roomId);
     if(room){
-        roomManager.joinRoom(roomId, { id: playerId, ws });
+        roomManager.joinRoom(roomId, { playerId: playerId, ws });
         broadcastRoomState(roomId);
     }
     else{
@@ -66,10 +70,8 @@ function broadcastRoomState(roomId) {
 
     const state = {
         type: 'roomState',
-        players: room.players.map(player => ({ id: player.id }))
+        players: room.players.map(player => ({ playerId: player.playerId }))
     };
-
-
 
     room.players.forEach(player => {
         if (player.ws.readyState === WebSocket.OPEN) {

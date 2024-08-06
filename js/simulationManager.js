@@ -1,6 +1,8 @@
 const { Engine, Bodies, World, Body, Constraint, Composites, Events } = require("matter-js");
 const {SERVER_WIDTH, SERVER_HEIGHT} = require("./config");
 const Matter = require("matter-js");
+const removeElementById = require("./customTools");
+
 
 class SimulationManager{
     constructor() {
@@ -8,15 +10,79 @@ class SimulationManager{
         this.world = this.engine.world;
         this.objects = [];
         this.ground = null;
-        this.playerLeft = null;
-        this.playerRight = null;
+        this.players = [];
+        this.ball = null;
+        this.goalZones = {};
+        this.onBallCollideGround = null;
         this.#setupSimulation();
     }
+
     #setupSimulation() {
         this.#createBoundaries();
         this.#createBall();
-        this.#createPlayers();
         this.#createNet();
+        this.#createGoalZones();
+
+        Events.on(this.engine, 'collisionStart',  event => {
+            event.pairs.forEach(pair => {
+
+                if(this.#isCollision(pair, this.ball, this.goalZones.left)){
+                    // this.goalZones.left.render.fillStyle = 'black';
+                    this.#handleBallCollideGround('left');
+                }
+
+                if(this.#isCollision(pair, this.ball, this.goalZones.right)){
+                    // this.goalZones.left.render.fillStyle = 'green';
+                    this.#handleBallCollideGround('right');
+                }
+
+                this.players.forEach(player => {
+                    if(this.#isCollision(pair, player, this.ground)){
+                        player.jumpCount = 0;
+                    }
+                })
+            })
+
+        })
+    }
+
+    #isCollision(pair, body1, body2){
+        return ((pair.bodyA === body1 && pair.bodyB === body2) ||
+            (pair.bodyA === body2 && pair.bodyB === body1));
+
+    }
+
+    #handleBallCollideGround(side){
+        if(this.onBallCollideGround){
+            this.onBallCollideGround(side);
+        }
+    }
+
+    #createGoalZones() {
+        const goalZoneLeftOptions = {
+            isStatic: true,
+            isSensor: true,
+            render: {
+                fillStyle: 'white'
+            }
+        };
+        const goalZoneLeft = Bodies.rectangle(SERVER_WIDTH / 4, SERVER_HEIGHT - 100, SERVER_WIDTH / 2, 200, goalZoneLeftOptions);
+        goalZoneLeft.options = {width: SERVER_WIDTH / 2, height: 200, ...goalZoneLeftOptions}
+
+        const goalZoneRightOptions = {
+            isStatic: true,
+            isSensor: true,
+            render: {
+                fillStyle: 'blue'
+            }
+        };
+        const goalZoneRight = Bodies.rectangle(SERVER_WIDTH - SERVER_WIDTH / 4, SERVER_HEIGHT - 100, SERVER_WIDTH / 2, 200, goalZoneRightOptions);
+        goalZoneRight.options = {width: SERVER_WIDTH / 2, height: 200, ...goalZoneRightOptions};
+
+        this.goalZones = {left: goalZoneLeft, right: goalZoneRight};
+        World.add(this.world, [goalZoneLeft, goalZoneRight]);
+        this.objects.push(goalZoneLeft, goalZoneRight);
+
     }
     #createBoundaries() {
         // Создание границ и добавление их в мир
@@ -42,7 +108,6 @@ class SimulationManager{
         Array.prototype.push.apply(this.objects, boundaries);
 
     }
-
     #createBall() {
         const ballOptions = {
             restitution: 0.7,
@@ -50,41 +115,70 @@ class SimulationManager{
             friction: 0.0001, // Увеличиваем трение для лучшего взаимодействия
             frictionAir: 0.008
         };
-        const ball = Bodies.circle(SERVER_WIDTH / 3, 100, 150, ballOptions);
+        const defaultPosition = this.getBallDefaultPosition('left');
+        const ball = Bodies.circle(defaultPosition.x, defaultPosition.y, 150, ballOptions);
         ball.options = { radius: 150, ...ballOptions };
 
+        this.ball = ball;
         this.objects.push(ball);
         World.add(this.world, ball);
     }
 
-    #createPlayers() {
+    getBallDefaultPosition(side){
+        if(side === 'left')
+            return {x: SERVER_WIDTH / 5, y: SERVER_HEIGHT - 1000}
+        else if (side === 'right')
+            return {x: SERVER_WIDTH - SERVER_WIDTH / 5, y: SERVER_HEIGHT - 1000};
+    }
+
+    getPlayerDefaultPosition(side){
+        if(side === 'left')
+            return {x: SERVER_WIDTH / 8, y: SERVER_HEIGHT - 200 - 160}
+        else if (side === 'right')
+            return {x: SERVER_WIDTH - SERVER_WIDTH / 8, y: SERVER_HEIGHT - 200 - 160};
+    }
+    addPlayers(players) {
+        const group = Body.nextGroup(true);
+
         const playerOptions = {
-            mass: 80,
+            mass: 180,
             inertia: Infinity,
             friction: 0,
             frictionAir: 0.005,
-            restitution: 0
+            restitution: 0,
+            collisionFilter: {group: group},
         };
 
-        const playerLeft = Bodies.polygon(SERVER_WIDTH / 3, SERVER_HEIGHT / 2, 10, 160, playerOptions);
-        playerLeft.playerId = null;
-        playerLeft.options = {sides: 10, radius:160, ...playerOptions };
-        Body.rotate(playerLeft, Math.PI / 2);
+        players.forEach(p => {
+            let player
+            let defaultPosition;
+            switch (p.side){
+                case 'left':
+                    defaultPosition = this.getPlayerDefaultPosition(p.side);
+                    player = Bodies.polygon(defaultPosition.x, defaultPosition.y, 10, 160, playerOptions);
+                    break;
+                case 'right':
+                    defaultPosition = this.getPlayerDefaultPosition(p.side);
+                    player = Bodies.polygon(defaultPosition.x, defaultPosition.y, 10, 160, {render: {fillStyle: 'white'}, ...playerOptions});
+                    break;
+                default:
+                    throw new Error('Сторона не выбрана');
+            }
 
-        const playerRight = Bodies.polygon(SERVER_WIDTH - SERVER_WIDTH / 3, SERVER_HEIGHT / 2, 10, 160, {render: {fillStyle: 'white'}, ...playerOptions});
-        playerRight.options = {sides: 10, radius:160, ...playerOptions }
-        playerLeft.playerId = null;
-        Body.rotate(playerRight, Math.PI / 2);
+            player.options = {sides: 10, radius:160, ...playerOptions }
+            player.playerId = p.playerId;
+            player.activeKeys = new Set();
+            // Поворачиваем шестиугольник на 90 градусов (π/2 радиан)
+            Body.rotate(player, Math.PI / 2);
 
-        // Поворачиваем шестиугольник на 90 градусов (π/2 радиан)
+            this.players.push(player)
+        })
 
-        this.objects.push(playerLeft, playerRight);
-        World.add(this.world, [playerLeft, playerRight]);
+        this.objects.push(...this.players);
+        World.add(this.world, this.players);
 
-        this.playerLeft = playerLeft;
-        this.playerRight= playerRight;
+
     }
-
     #createNet() {
         // Создание сетки и добавление её в мир
         const group = Body.nextGroup(true);
@@ -146,6 +240,7 @@ class SimulationManager{
         {
             const obj = ({
                     id: body.id,
+                    // playerId: body.playerId,
                     render: body.render,
                     type: body.label,
                     position: body.position,
@@ -157,15 +252,31 @@ class SimulationManager{
             return obj;
         });
     }
+
+    removePlayer(playerId){
+        let player = this.players.find(x => x.playerId === playerId);
+        World.remove(this.world, player)
+        removeElementById(this.objects, playerId)
+
+        return player.id;
+    }
+
     applyForce(playerId, action){
-        const moveSpeed = 10;
+        const moveSpeed = 15;
         const jumpSpeed = 20;
-        let player = this.playerRight.playerId === playerId ? this.playerRight : this.playerLeft;
+        let player = this.players.find(x => x.playerId === playerId);
+
+        console.log(player);
+        console.log(this.players);
+
 
         switch (action) {
             case 'jump':
                 // Matter.Body.applyForce(player, player.position, {x:0, y: -forceMagnitude})
-                Matter.Body.setVelocity(player, {x: player.velocity.x, y: -jumpSpeed});
+                if(player.jumpCount < 2){
+                    Matter.Body.setVelocity(player, {x: player.velocity.x, y: -jumpSpeed});
+                    player.jumpCount++;
+                }
                 break;
             case 'moveRight':
                 // Matter.Body.applyForce(player, player.position, {x: forceMagnitude, y: 0})

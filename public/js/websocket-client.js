@@ -28,20 +28,30 @@ function connectWebSocket(roomId){
                     document.getElementById('responseMessage').textContent = 'Ошибка присоединения к комнате';
                     console.error('Error:', data.message);
                     socket.close()
-
                 }
                 else if(data.type === 'playerId'){
                     playerId = data.playerId;
                 }
                 else if (data.type === 'roomState') {
                     updateRoomState(data.players);
+                    updateTeamList(data.players);
                 }
                 else if(data.type === 'gameState'){
                     // console.log('Получено состояние:', data); // Лог полученного состояния
                     drawSimulation(data.state);
                 }
                 else if(data.type === 'gameStarted'){
+                    showScore();
                     document.getElementById('overlay').style.display = 'none';
+                }
+                else if(data.type === 'removeObject'){
+                    removeObjectFromWorld(data.id);
+                }
+                else if(data.type === 'scoreUpdated'){
+                    updateScore(data.score);
+                }
+                else if(data.type === 'commandSelected'){
+                    updateTeamList(data.players)
                 }
             } catch (error) {
                 console.error('Ошибка разбора JSON:', error);

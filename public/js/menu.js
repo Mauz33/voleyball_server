@@ -15,6 +15,7 @@ document.getElementById('createRoomForm').addEventListener('submit', function(ev
             document.getElementById('joinRoomForm').style.display = 'none';
             document.getElementById('createRoomForm').style.display = 'none';
             document.getElementById('roomState').style.display = 'block';
+            document.getElementById('teamSelection').style.display = 'block';
 
         })
         .catch(error => {
@@ -35,6 +36,8 @@ document.getElementById('joinRoomForm').addEventListener('submit', function(even
     document.getElementById('joinRoomForm').style.display = 'none';
     document.getElementById('createRoomForm').style.display = 'none';
     document.getElementById('roomState').style.display = 'block';
+    document.getElementById('teamSelection').style.display = 'block';
+
 });
 
 document.getElementById('startGame').addEventListener('click', function(event) {
@@ -43,11 +46,54 @@ document.getElementById('startGame').addEventListener('click', function(event) {
     socket.send(JSON.stringify({type: 'roomAction', action: 'startGame', roomId: roomId }));
 });
 
+
+function selectSide(side){
+    socket.send(JSON.stringify({type: 'roomAction', action: 'selectCommand', roomId: roomId, side: side}));
+
+}
+
+function showScore(){
+    document.getElementById('score-bar').style.display = 'flex';
+}
+
+function updateScore(score){
+    document.getElementById('score').textContent = `${score.left}-${score.right}`;
+}
+
 function updateRoomState(players){
+    const playersList = document.getElementById(`participants`);
+    playersList.innerHTML = '';
+
     players.forEach((player, index) =>{
-        const playerSlot = document.getElementById(`player${index}`).textContent = `Игрок ${index + 1}: ${player.id}`;
+        const li = document.createElement('li');
+        if(player.playerId === playerId)
+            li.className = 'list-group-item list-group-item-dark';
+        else
+            li.className = 'list-group-item';
+
+        li.textContent = `Игрок ${index + 1}: ${player.playerId}`;
+        playersList.appendChild(li);
     })
 
     if(players.length > 0)
         document.getElementById('startGame').style.display = 'block';
+}
+
+function updateTeamList(players) {
+    const left = document.getElementById(`team-left-list`);
+    const right = document.getElementById(`team-right-list`);
+    left.innerHTML = ''; // Очистка текущего списка
+    right.innerHTML = '';
+    players.forEach(player => {
+        const li = document.createElement('li');
+        li.textContent = player.playerId;
+        if(player.side === 'left'){
+            li.className = 'list-group-item list-group-item-danger';
+            left.appendChild(li);
+        }
+        else if(player.side === 'right'){
+            li.className = 'list-group-item list-group-item-primary';
+            right.appendChild(li);
+        }
+    });
 }

@@ -39,6 +39,7 @@ class SimulationManager{
                 this.players.forEach(player => {
                     if(this.#isCollision(pair, player, this.ground)){
                         player.jumpCount = 0;
+                        this.canJump = true;
                     }
                 })
             })
@@ -168,6 +169,7 @@ class SimulationManager{
             player.options = {sides: 10, radius:160, ...playerOptions }
             player.playerId = p.playerId;
             player.activeKeys = new Set();
+            player.canJump = true;
             // Поворачиваем шестиугольник на 90 градусов (π/2 радиан)
             Body.rotate(player, Math.PI / 2);
 
@@ -234,6 +236,9 @@ class SimulationManager{
 
     update() {
         Engine.update(this.engine, 1000 / 60);
+        this.players.forEach(player => {
+            this.applyForce(player)
+        })
     }
     getSimulationState() {
         return this.objects.map(body =>
@@ -261,44 +266,37 @@ class SimulationManager{
         return player.id;
     }
 
-    applyForce(playerId, action){
+    applyForce(player){
         const moveSpeed = 15;
         const jumpSpeed = 20;
-        let player = this.players.find(x => x.playerId === playerId);
+        // let player = this.players.find(x => x.playerId === playerId);
 
-        console.log(player);
-        console.log(this.players);
+        // console.log(player);
+        // console.log(this.players);
 
-
-        switch (action) {
-            case 'jump':
-                // Matter.Body.applyForce(player, player.position, {x:0, y: -forceMagnitude})
-                if(player.jumpCount < 2){
-                    Matter.Body.setVelocity(player, {x: player.velocity.x, y: -jumpSpeed});
-                    player.jumpCount++;
-                }
-                break;
-            case 'moveRight':
-                // Matter.Body.applyForce(player, player.position, {x: forceMagnitude, y: 0})
-                Matter.Body.setVelocity(player, {x: moveSpeed, y: player.velocity.y});
-                break;
-            case 'moveLeft':
-                // Matter.Body.applyForce(player, player.position, {x: -forceMagnitude, y: 0})
-                Matter.Body.setVelocity(player, {x: -moveSpeed, y: player.velocity.y});
-
-                break;
-            case 'moveDown':
-                // Matter.Body.applyForce(player, player.position, {x: 0, y: forceMagnitude})
-                Matter.Body.setVelocity(player, {x: player.velocity.x, y: jumpSpeed});
-                break;
-
-            case 'stop':
-                // Matter.Body.applyForce(player, player.position, {x: 0, y: forceMagnitude})
-                Matter.Body.setVelocity(player, {x: 0, y: player.velocity.y});
-                break;
-            default:
-                alert( "Нет таких значений" );
+        if (player.activeKeys.has('jump') && player.canJump && player.jumpCount < 2) {
+            Matter.Body.setVelocity(player, { x: player.velocity.x, y: -jumpSpeed });
+            player.jumpCount++;
+            player.canJump = false; // Блокируем прыжок до отпуска клавиши
         }
+
+        if (player.activeKeys.has('moveRight')) {
+            Matter.Body.setVelocity(player, { x: moveSpeed, y: player.velocity.y });
+        }
+
+        if (player.activeKeys.has('moveLeft')) {
+            Matter.Body.setVelocity(player, { x: -moveSpeed, y: player.velocity.y });
+        }
+
+        if (player.activeKeys.has('moveDown')) {
+            Matter.Body.setVelocity(player, { x: player.velocity.x, y: jumpSpeed });
+        }
+
+        if (player.activeKeys.size === 0) {
+            Matter.Body.setVelocity(player, { x: 0, y: player.velocity.y });
+        }
+
+
     }
 }
 

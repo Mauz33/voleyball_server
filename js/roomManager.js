@@ -59,7 +59,6 @@ class RoomManager{
             room.gameManager.players = room.players; // Обновляем список игроков в GameManager
 
             this.broadcast(roomId, {type: 'removeObject', id: objectId});
-            console.log(`Object id ${objectId}`);
         }
 
 
@@ -90,11 +89,24 @@ class RoomManager{
         return this.rooms[roomId];
     }
 
-    handleGameAction(roomId, playerId, action) {
-        console.log(playerId);
+    handleGameAction(roomId, playerId, action, eventType) {
+        console.log(action, eventType);
         const room = this.rooms[roomId];
         // console.log(room, playerId);
-        room.simulation.applyForce(playerId, action);
+        let player = room.simulation.players.find(x => x.playerId === playerId);
+        // console.log(action, player.activeKeys);
+
+        if (eventType === 'keydown') {
+            player.activeKeys.add(action);
+            if (action === 'jump') {
+                player.canJump = true; // Разрешаем проверку возможности прыжка при новом нажатии
+            }
+        } else if (eventType === 'keyup') {
+            player.activeKeys.delete(action);
+            if (action === 'jump') {
+                player.canJump = true; // Разрешаем проверку возможности прыжка при новом нажатии
+            }
+        }
     }
     startSimulation(roomId) {
         const room = this.rooms[roomId];

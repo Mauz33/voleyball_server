@@ -10,26 +10,27 @@ const keyMap = {
     KeyS: 'moveDown'
 };
 const activeKeys = new Set();
+const previousState = {};
 document.addEventListener('keydown', (event) => {
-    const action = keyMap[event.code]
-    if(action)
-    {
+    const action = keyMap[event.code];
+    if (action && !previousState[event.code]) {
+        // Только если клавиша не была ранее активна
         activeKeys.add(action);
-        sendMovementCommands();
+        sendMovementCommand(action, 'keydown');
+        previousState[event.code] = true;
     }
 });
+
 document.addEventListener('keyup', (event) => {
-    const action = keyMap[event.code]
-    if(action){
+    const action = keyMap[event.code];
+    if (action) {
         activeKeys.delete(action);
-        sendMovementCommands();
+        sendMovementCommand(action, 'keyup');
+        previousState[event.code] = false;
     }
 });
-function sendMovementCommands(){
-    console.log(playerId);
-    if(activeKeys.size === 0){
-        socket.send(JSON.stringify({type: 'gameAction', action: 'stop', roomId: roomId}));
-    }
-    else
-        activeKeys.forEach(action => socket.send(JSON.stringify({type: 'gameAction', action: action, roomId: roomId})));
+
+function sendMovementCommand(action, eventType) {
+    console.log(eventType); // Для отладки
+    socket.send(JSON.stringify({ type: 'gameAction', action: action, eventType: eventType, roomId: roomId }));
 }

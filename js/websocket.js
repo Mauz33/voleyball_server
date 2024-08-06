@@ -37,7 +37,7 @@ function setupWebSocket(server) {
                 }
             }
             else if(message.type === 'gameAction'){
-                roomManager.handleGameAction(message.roomId, ws.playerId, message.action);
+                roomManager.handleGameAction(message.roomId, ws.playerId, message.action, message.eventType);
 
             }
         });
